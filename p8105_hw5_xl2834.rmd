@@ -34,6 +34,7 @@ set.seed(1)
 ```{r load_libraries}
 library(tidyverse)
 library(modelr)
+library(mgcv)
 library(p8105.datasets)
 ```
 
@@ -116,7 +117,8 @@ Find some residuals
 
 ```{r}
 baby_df = 
-  read_csv("./data/birthweight.csv")
+  read_csv("./data/birthweight.csv") %>% 
+  select(bwt, babysex, bhead, blength, gaweeks, wtgain)
 ```
 
 fit a model
@@ -126,6 +128,36 @@ model_fit = lm(bwt ~ gaweeks + blength + bhead + wtgain, data = baby_df)
 model_main = lm(bwt ~ gaweeks + blength, data = baby_df)
 model_int = lm(bwt ~ bhead * blength * babysex, data = baby_df)
 ```
+
+```{r}
+train_df = sample_n(baby_df, 3200)
+test_df = anti_join(baby_df, train_df)
+```
+
+```{r}
+cv_df =
+  crossv_mc(baby_df, 100) %>% 
+  mutate(
+    train = map(train, as_tibble),
+    test = map(test, as_tibble))
+
+cv_df = 
+  cv_df %>% 
+  mutate(
+    model_fit = map(train, ~lm(bwt ~ gaweeks + blength + bhead + wtgain, data = .x)),
+    model_main = map(train, ~lm(bwt ~ gaweeks + blength, data = .x)),
+    model_int = map(train, ~lm(bwt ~ bhead * blength * babysex, data = .x))
+  ) %>% 
+  mutate(
+    rmse_fit = map2_dbl(model_fit, test, ~rmse(model = .x, data = .y)),
+    rmse_main = map2_dbl(model_main, test, ~rmse(model = .x, data = .y)),
+    rmse_int = map2_dbl(model_int, test, ~rmse(model = .x, data = .y))
+  )
+```
+
+
+
+
 
 
 ```{r}
