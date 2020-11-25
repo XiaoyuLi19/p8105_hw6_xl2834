@@ -113,7 +113,7 @@ models_results_df %>%
 
 ## Problem 2
 
-Find some residuals
+Import the dataset
 
 ```{r}
 baby_df = 
@@ -121,18 +121,53 @@ baby_df =
   select(bwt, babysex, bhead, blength, gaweeks, wtgain)
 ```
 
-fit a model
+**Fit a model**
+
+First, I checked the relationship between bwt and several candidate predictors.
+```{r}
+baby_df %>% 
+  ggplot(aes(x = gaweeks, y = bwt)) +
+  geom_point(alpha = 0.5)
+
+baby_df %>% 
+  ggplot(aes(x = blength, y = bwt)) +
+  geom_point(alpha = 0.5)
+
+baby_df %>% 
+  ggplot(aes(x = bhead, y = bwt)) +
+  geom_point(alpha = 0.5)
+
+baby_df %>% 
+  ggplot(aes(x = wtgain, y = bwt)) +
+  geom_point(alpha = 0.5)
+```
+
+There seems to be a positive correlation between bwt and gaweeks, bhead, and blength. I tried fitting a linear model with these predictors, and then checked the residual against the main predictor of interest: gaweeks, and the distribution of residuals.
 
 ```{r}
 model_fit = lm(bwt ~ gaweeks + blength + bhead + wtgain, data = baby_df)
+
+baby_df %>% 
+  modelr::add_residuals(model_fit) %>% 
+  ggplot(aes(x = gaweeks, y = resid)) + 
+  geom_point()
+
+baby_df %>% 
+  modelr::add_residuals(model_fit) %>% 
+  ggplot(aes(x = resid)) + 
+  geom_density()
+```
+
+The residuals seem to be evenly distributed over 0 across gaweeks, Although there are 2 very large residuals at around gaweeks = 40. The distribution of residual is approximately normal, although skewed to the right. This is possibly due to the 2 large residuals observed at gaweeks = 40.
+
+**Build 2 other models.**
+
+```{r}
 model_main = lm(bwt ~ gaweeks + blength, data = baby_df)
 model_int = lm(bwt ~ bhead * blength * babysex, data = baby_df)
 ```
 
-```{r}
-train_df = sample_n(baby_df, 3200)
-test_df = anti_join(baby_df, train_df)
-```
+**Cross validation**
 
 ```{r}
 cv_df =
@@ -155,7 +190,7 @@ cv_df =
   )
 ```
 
-Compare models using cross-validated prediction error
+**Compare models using cross-validated prediction error**
 
 ```{r}
 cv_df %>%
@@ -183,9 +218,3 @@ cv_df %>%
 The fit and interaction models have smaller prediction error than the model with main effect. The fit model does a little bit better than interaction model because it has lower mean rmse. 
 
 
-```{r}
-baby_df %>% 
-  modelr::add_residuals(model_fit) %>% 
-  ggplot(aes(x = gaweeks, y = resid)) + 
-  geom_point()
-```
