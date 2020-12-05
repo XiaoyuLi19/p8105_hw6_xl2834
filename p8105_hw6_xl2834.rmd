@@ -233,10 +233,11 @@ weather_df =
   select(name, id, everything())
 ```
 
+Data preparation and making plots.
 ```{r}
 boot_df =
   weather_df %>%
-  modelr::bootstrap(n = 50) %>% 
+  modelr::bootstrap(n = 5000) %>% 
   mutate(
     models = map(strap, ~lm(tmax ~ tmin, data = .x)),
     r_sq = map(models, broom::glance),
@@ -249,10 +250,34 @@ boot_df =
   pivot_wider(names_from = term, values_from = estimate) %>% 
   mutate(log_betas = log(`(Intercept)` * tmin))
 
+plot_1 =
+  boot_df %>% 
+  ggplot(aes(x = r.squared)) + geom_density() +
+  labs(title = "Distribution of the estimates of r squared")
+
+plot_2 = 
+  boot_df %>% 
+  ggplot(aes(x = log_betas)) + geom_density() +
+  labs(title = "Distribution of the estimates of log (beta_0)*(beta_1)")
+
+plot_1 / plot_2
+
+
+
+  
+```
+The distribution of r squared estimates is left-skewed, with a mean at around 0.915. The distribution of log(β0∗β1) estimates has a heavy upper tail, and its mean is about 2.
+
+
+Produce a 95% confidence interval for the estimates of r squared and log(β0∗β1).
+```{r}
 boot_df %>% 
-  ggplot(aes(x = r.squared)) + geom_density()
-
-
+  summarize(
+    r_ci_u = quantile(r.squared, 0.025),
+    r_ci_l = quantile(r.squared, 0.975),
+    l_ci_u = quantile(log_betas, 0.025),
+    l_ci_l = quantile(log_betas, 0.975)) %>% 
+  knitr::kable()
   
 ```
 
