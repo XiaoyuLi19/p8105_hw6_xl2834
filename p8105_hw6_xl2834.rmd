@@ -266,7 +266,7 @@ plot_1 / plot_2
 
   
 ```
-The distribution of r squared estimates is left-skewed, with a mean at around 0.915. The distribution of log(β0∗β1) estimates has a heavy upper tail, and its mean is about 2.
+The distribution of r squared estimates is slightly left_skewed, with a mean at around 0.915. The distribution of log(β0∗β1) estimates is approximately normal, and its mean is about 2.02.
 
 
 Produce a 95% confidence interval for the estimates of r squared and log(β0∗β1).
@@ -281,3 +281,4 @@ boot_df %>%
   
 ```
 
+The 95% CI for r squared is (0.89, 0.93). The 95% CI for log(β0∗β1) is (1.97, 2.06).
