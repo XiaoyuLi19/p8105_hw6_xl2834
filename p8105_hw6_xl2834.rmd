@@ -1,7 +1,7 @@
 ---
-title: "p8105_hw5_xl2834"
+title: "p8105_hw6_xl2834"
 author: "Xiaoyu Li"
-date: "11/10/2020"
+date: "11/25/2020"
 output: github_document
 ---
 
@@ -217,4 +217,42 @@ cv_df %>%
 
 The fit and interaction models have smaller prediction error than the model with main effect. The fit model does a little bit better than interaction model because it has lower mean rmse. 
 
+## Problem 3
+
+```{r}
+weather_df = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2017-01-01",
+    date_max = "2017-12-31") %>%
+  mutate(
+    name = recode(id, USW00094728 = "CentralPark_NY"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) %>%
+  select(name, id, everything())
+```
+
+```{r}
+boot_df =
+  weather_df %>%
+  modelr::bootstrap(n = 50) %>% 
+  mutate(
+    models = map(strap, ~lm(tmax ~ tmin, data = .x)),
+    r_sq = map(models, broom::glance),
+    results = map(models, broom::tidy)) %>% 
+  select(-strap, -models) %>% 
+  unnest(r_sq) %>% 
+  select(.id, r.squared, results) %>% 
+  unnest(results) %>%
+  select(-std.error, -statistic, -p.value) %>% 
+  pivot_wider(names_from = term, values_from = estimate) %>% 
+  mutate(log_betas = log(`(Intercept)` * tmin))
+
+boot_df %>% 
+  ggplot(aes(x = r.squared)) + geom_density()
+
+
+  
+```
 
